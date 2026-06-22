@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: API Documentation
+  description: Auto-generated API documentation
+  version: 1.0.0
+paths:
+  /vets:
+    get:
+      summary: GET endpoint to retrieve all vets with caching
+      description: Retrieves a list of all veterinarians from the repository with
+        caching enabled.
+      operationId: showResourcesVetList
+      tags:
+      - Vets
+      responses:
+        '200':
+          description: Successful retrieval of vet list
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized access
+        '500':
+          description: Internal server error
+tags:
+- name: Vets
