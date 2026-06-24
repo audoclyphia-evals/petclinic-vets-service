@@ -1,0 +1,33 @@
+sequenceDiagram
+    %% This diagram traces the flow of an HTTP GET request to the /vets endpoint
+    %% as per the scope: Vet Listing Flow
+
+    %% Participants
+    actor Client as "HTTP Client"
+    participant VetResource as "VetResource"
+    participant Cache as "Spring Cache"
+    participant VetRepo as "VetRepository"
+
+    %% Autonumber for message ordering
+    autonumber
+
+    %% Flow
+    Client->>VetResource: HTTP GET /vets
+    VetResource->>Cache: check cache("vets")
+    alt Cache hit
+        Cache-->>VetResource: cached List<Vet>
+        VetResource-->>Client: return cached List<Vet>
+    else Cache miss
+        Cache-->>VetResource: cache miss
+        VetResource->>VetRepo: findAll()
+        VetRepo-->>VetResource: List<Vet>
+        VetResource->>Cache: cache result("vets")
+        Cache-->>VetResource: stored
+        VetResource-->>Client: return List<Vet>
+    end
+
+    %% Notes for participants
+    note over Client: Represents an external HTTP client making the GET request (implied by scope)
+    note over VetResource: REST controller with @GetMapping and @Cacheable annotations
+    note over Cache: Spring Cache abstraction (enabled by CacheConfig in production)
+    note over VetRepo: Spring Data JPA repository for Vet entity

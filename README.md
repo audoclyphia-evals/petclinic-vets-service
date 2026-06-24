@@ -8,26 +8,26 @@
 
 A Spring Boot microservice that manages veterinarian data and their specialties within the Spring PetClinic application ecosystem.
 
-## Overview
+## Project Overview
 
 The PetClinic Vets Service is a core microservice in the [Spring PetClinic](https://spring.io/projects/spring-petclinic) distributed architecture. It provides a REST API for querying veterinarian information, including each vet's associated specialties (e.g., dentistry, radiology).
 
-This service is part of a multi-service PetClinic deployment alongside sibling services:
+This service is part of a multi-service deployment alongside sibling services:
 - **petclinic-api-gateway** — API gateway routing requests to downstream services
 - **petclinic-customers-service** — Manages pet owner and pet data
 - **petclinic-visits-service** — Manages pet visit records
 
-The Vets Service registers itself with Netflix Eureka for service discovery, integrates with Spring Cloud Config for centralized configuration, and supports distributed tracing via Zipkin.
+The service registers itself with Netflix Eureka for service discovery, integrates with Spring Cloud Config for centralized configuration, and supports distributed tracing via Zipkin.
 
 ## Features
 
-- **REST API for Veterinarian Data** — Exposes a `GET /vets` endpoint that returns all veterinarians with their specialties (see [API Documentation](#api-documentation) for details).
-- **JPA Entity Modeling** — Defines `Vet` and `Specialty` entities with proper relational mappings, including a many-to-many relationship between vets and specialties.
-- **Spring Data JPA Repository** — Uses `VetRepository` for database access with zero-boilerplate query methods.
-- **Caching with Caffeine** — Supports in-memory caching of vet data (enabled in the `production` profile) to reduce database load (see [Usage](#usage) for configuration details).
-- **Service Discovery** — Registers with Netflix Eureka for dynamic service location in a distributed deployment.
-- **Centralized Configuration** — Integrates with Spring Cloud Config Server for externalized configuration management.
-- **Observability** — Includes Spring Boot Actuator, Micrometer with Prometheus metrics, and Zipkin distributed tracing support.
+- **REST API for Veterinarian Data** — Exposes `GET /vets` (all veterinarians) and `GET /vets/{vetId}` (single vet by ID) endpoints.
+- **JPA Entity Modeling** — Defines `Vet` and `Specialty` entities with a many-to-many relationship.
+- **Spring Data JPA Repository** — Uses `VetRepository` for database access.
+- **Caching with Caffeine** — Supports in-memory caching in the `production` profile (see [Caching Behavior](#caching-behavior)).
+- **Service Discovery** — Registers with Netflix Eureka (see [Integration with the PetClinic Gateway](#integration-with-the-petclinic-gateway)).
+- **Centralized Configuration** — Integrates with Spring Cloud Config Server.
+- **Observability** — Includes Spring Boot Actuator, Micrometer metrics, and Zipkin tracing (see [Actuator Endpoints](#actuator-endpoints)).
 - **Chaos Engineering** — Includes Chaos Monkey integration for resilience testing.
 
 ## Requirements
@@ -35,7 +35,9 @@ The Vets Service registers itself with Netflix Eureka for service discovery, int
 - **Java 17** or higher
 - **Maven 3.9+** (or use the included Maven wrapper if available)
 - **Database**: HSQLDB is included as a runtime dependency for development; MySQL connector is also available for production use.
-- **Service Discovery**: Netflix Eureka server (required for service registration in distributed mode).
+- **Service Discovery**: Netflix Eureka server (required for distributed mode).
+
+With these prerequisites satisfied, you can proceed with installation.
 
 ## Installation
 
@@ -51,11 +53,11 @@ mvn clean install
 mvn clean install -DskipTests
 ```
 
-The build produces a JAR artifact (`spring-petclinic-vets-service.jar`).
+The build produces a JAR artifact (`spring-petclinic-vets-service.jar`). You can now start the service.
 
 ## Quick Start
 
-Once built, you can start the service and verify it is running:
+Once built, start the service and verify it is running:
 
 1. Run the application:
 ```bash
@@ -87,9 +89,9 @@ Expected response (JSON array of vet objects):
 ]
 ```
 
-## Usage
+For more advanced usage, including caching and gateway integration, see the [Usage](#usage) section.
 
-With the service running, you can interact with it as described below. For a complete reference of all request and response schemas, see the [API Documentation](#api-documentation).
+## Usage
 
 ### Retrieving All Veterinarians
 
@@ -98,9 +100,18 @@ The primary endpoint returns all veterinarians with their associated specialties
 curl -s http://localhost:8080/vets | jq .
 ```
 
+### Retrieving a Single Veterinarian
+
+Fetch a specific veterinarian by their ID. Returns the vet object with a `200 OK` status, or `404 Not Found` if no vet exists:
+```bash
+curl -s http://localhost:8080/vets/1 | jq .
+```
+
+If the vet ID does not exist, the endpoint returns an empty response with HTTP status `404`.
+
 ### Caching Behavior
 
-In the `production` profile, vet list responses are cached using Caffeine. The cache configuration can be customized via `VetsProperties`, which supports cache TTL and heap size settings. Caching is not active in the default profile.
+When run with the `production` profile, vet list responses are cached using Caffeine. Caching is not active in the default profile. The cache configuration can be customized via `VetsProperties`, which supports cache TTL and heap size settings.
 
 To run with the production profile:
 ```bash
@@ -109,31 +120,39 @@ mvn spring-boot:run -Dspring-boot.run.profiles=production
 
 ### Integration with the PetClinic Gateway
 
-When deployed as part of the full PetClinic stack, the Vets Service is accessed through the API Gateway. The gateway uses Netflix Eureka to discover the Vets Service instance and routes requests to the `GET /vets` endpoint, providing a unified entry point for clients.
+When deployed as part of the full PetClinic stack, the Vets Service is accessed through the PetClinic API Gateway. The gateway uses Netflix Eureka to discover the Vets Service instance and routes requests to its endpoints, providing a unified entry point. For a broader understanding of the system design, refer to the [System Architecture Documentation](ARCHITECTURE.md).
 
 ### Actuator Endpoints
 
-Spring Boot Actuator is enabled, providing operational endpoints for health checks, metrics, and application info at `/actuator`:
+Spring Boot Actuator provides operational endpoints for health checks, metrics, and application info at `/actuator`:
 ```bash
 curl http://localhost:8080/actuator/health
 ```
 
-## API Documentation
+## API Reference
 
-The following OpenAPI specification describes the REST endpoints exposed by this service.
+The service's REST API is summarized below. For complete details on request parameters, response schemas, and error codes, refer to the [API Documentation](api_documentation.yaml).
 
-**OpenAPI Specification (`api_documentation.yaml`)**
+### Endpoints
+
+| Method | Path          | Description                                      |
+|--------|---------------|--------------------------------------------------|
+| GET    | `/vets`       | Retrieve a list of all veterinarians with caching. |
+| GET    | `/vets/{vetId}`| Retrieve a single veterinarian by ID.            |
+
+### OpenAPI Specification
+
 ```yaml
 openapi: 3.0.3
 info:
   title: PetClinic Vets Service API
-  description: API for retrieving veterinarian information within the PetClinic application.
+  description: Auto-generated API documentation
   version: 1.0.0
 paths:
   /vets:
     get:
-      summary: Get all veterinarians
-      description: Retrieves a list of all veterinarians from the repository, including their specialties. When the `production` profile is active, the response is served from cache.
+      summary: Retrieve all vets
+      description: Retrieves a list of all veterinarians with caching enabled.
       operationId: showResourcesVetList
       tags:
       - Vets
@@ -146,6 +165,30 @@ paths:
           description: Unauthorized access
         '500':
           description: Internal server error
+  /vets/{vetId}:
+    get:
+      summary: Retrieve a vet by ID
+      description: Fetches a vet by ID, returns the vet or 404 if not found.
+      operationId: getVetById
+      tags:
+      - Vets
+      parameters:
+      - name: vetId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Unique identifier of the vet
+      responses:
+        '200':
+          description: Vet found and returned successfully
+        '404':
+          description: Vet not found
 tags:
 - name: Vets
 ```
+
+## Additional Documentation
+
+- [System Architecture Documentation](ARCHITECTURE.md) - Overview of the Spring PetClinic application architecture and component interactions.
+- [API Documentation](api_documentation.yaml) - Detailed OpenAPI specification file.

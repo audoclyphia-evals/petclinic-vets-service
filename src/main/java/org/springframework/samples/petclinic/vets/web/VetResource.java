@@ -1,4 +1,4 @@
-/*
+/*  // This file contains the VetResource REST controller class for managing veterinary staff in the PetClinic application. It includes the controller with endpoints for listing all vets and retrieving individual vet details by ID, along with necessary imports and license information.
  * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,11 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @author Juergen Hoeller
- * @author Mark Fisher
- * @author Ken Krebs
- * @author Arjen Poutsma
- * @author Maciej Szarlinski
+ * A Spring REST controller that defines endpoints for the Vet resource at '/vets'. It injects VetRepository for data access and provides methods: showResourcesVetList for listing all vets with caching, and showResourcesVet for retrieving a single vet by ID with proper HTTP response handling.
  */
 @RequestMapping("/vets")
 @RestController
@@ -51,7 +47,7 @@ class VetResource {
     }
 
     /**
-     * Get a single vet by ID.
+     * Handles GET requests to /vets/{vetId} to retrieve a specific vet by ID. Uses VetRepository to find the vet by the provided vetId path variable, returning the Vet entity in a ResponseEntity if found, or a 404 Not Found response if the vet does not exist.
      */
     @GetMapping("/{vetId}")
     public ResponseEntity<Vet> showResourcesVet(@PathVariable("vetId") int vetId) {
