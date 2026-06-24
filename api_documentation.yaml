@@ -21,5 +21,24 @@ paths:
           description: Unauthorized access
         '500':
           description: Internal server error
+  /vets/{vetId}:
+    get:
+      summary: Retrieve a single vet by ID
+      description: Fetches a vet by ID, returns the vet or 404 if not found
+      operationId: getVetById
+      tags:
+      - Vets
+      responses:
+        '200':
+          description: Vet found and returned successfully
+        '404':
+          description: Vet not found
+      parameters:
+      - name: vetId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Unique identifier of the vet
 tags:
 - name: Vets
